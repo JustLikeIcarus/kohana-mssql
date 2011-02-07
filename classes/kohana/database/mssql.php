@@ -5,12 +5,12 @@
 * @author     Kohana Team, xrado
 */
 class Kohana_Database_MsSQL extends Database_PDO {
-	
-	public function query($type, $sql, $as_object)
+
+	public function query($type, $sql, $as_object = FALSE, array $params = NULL)
 	{
 		// Make sure the database is connected
 		$this->_connection or $this->connect();
-		
+
 		// Mssql specific
 		if(preg_match("/OFFSET ([0-9]+)/i",$sql,$matches))
 		{
@@ -42,13 +42,13 @@ class Kohana_Database_MsSQL extends Database_PDO {
 				{
 					$over = preg_replace('/[^,\s]*\.([^,\s]*)/i', 'inner_tbl.$1', $orderby);
 				}
-				
+
 				// Remove ORDER BY clause from $sql
 				$sql = preg_replace('/\s+ORDER BY(.*)/', '', $sql);
-				
+
 				// Add ORDER BY clause as an argument for ROW_NUMBER()
 				$sql = "SELECT ROW_NUMBER() OVER ($over) AS KOHANA_DB_ROWNUM, * FROM ($sql) AS inner_tbl";
-			  
+
 				$start = $offset + 1;
 				$end = $offset + $limit;
 
@@ -101,7 +101,7 @@ class Kohana_Database_MsSQL extends Database_PDO {
 			{
 				$result->setFetchMode(PDO::FETCH_CLASS, 'stdClass');
 			}
-			
+
 			$result = $result->fetchAll();
 
 			// Return an iterator of results
@@ -113,7 +113,7 @@ class Kohana_Database_MsSQL extends Database_PDO {
 			return array(
 				$this->insert_id(),
 				$result->rowCount(),
-			);
+				);
 		}
 		else
 		{
@@ -121,7 +121,7 @@ class Kohana_Database_MsSQL extends Database_PDO {
 			return $result->rowCount();
 		}
 	}
-	
+
 	public function insert_id()
 	{
 		$table = preg_match('/^insert\s+into\s+(.*?)\s+/i',$this->last_query,$match) ? arr::get($match,1) : NULL;
@@ -131,7 +131,7 @@ class Kohana_Database_MsSQL extends Database_PDO {
 		$data = $this->query(Database::SELECT,$query,FALSE)->current();
 		return (int) Arr::get($data,'insert_id');
 	}
-	
+
 	public function datatype($type)
 	{
 		static $types = array
@@ -139,14 +139,14 @@ class Kohana_Database_MsSQL extends Database_PDO {
 			'nvarchar'  => array('type' => 'string'),
 			'ntext'     => array('type' => 'string'),
 			'tinyint'   => array('type' => 'int', 'min' => '0', 'max' => '255'),
-		);
+			);
 
 		if (isset($types[$type]))
 			return $types[$type];
 
 		return parent::datatype($type);
 	}
-	
+
 	public function list_tables($like = NULL)
 	{
 		if (is_string($like))
@@ -169,8 +169,8 @@ class Kohana_Database_MsSQL extends Database_PDO {
 
 		return $tables;
 	}
-	
-	public function list_columns($table, $like = NULL)
+
+	public function list_columns($table, $like = NULL, $add_prefix = TRUE)
 	{
 		if (is_string($like))
 		{
@@ -193,12 +193,12 @@ class Kohana_Database_MsSQL extends Database_PDO {
 			$column['data_type']        = $type;
 			$column['is_nullable']      = ($row['IS_NULLABLE'] == 'YES');
 			$column['ordinal_position'] = $row['ORDINAL_POSITION'];
-			
+
 			if($row['CHARACTER_MAXIMUM_LENGTH'])
 			{
 				$column['character_maximum_length'] = $row['CHARACTER_MAXIMUM_LENGTH'];
 			}
-			
+
 			$result[$row['COLUMN_NAME']] = $column;
 		}
 
